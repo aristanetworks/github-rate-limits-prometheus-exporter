@@ -1,68 +1,69 @@
+{{- range $index,$github := $.Values.github }}
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: {{ include "github-app-limits-prometheus-exporter.fullname" . }}
+  name: {{ include "github-app-limits-prometheus-exporter.fullname" $. }}
   labels:
-    {{- include "github-app-limits-prometheus-exporter.labels" . | nindent 4 }}
+    {{- include "github-app-limits-prometheus-exporter.labels" $. | nindent 4 }}
 spec:
-  {{- if not .Values.autoscaling.enabled }}
-  replicas: {{ .Values.replicaCount }}
+  {{- if not $.Values.autoscaling.enabled }}
+  replicas: {{ $.Values.replicaCount }}
   {{- end }}
   selector:
     matchLabels:
-      {{- include "github-app-limits-prometheus-exporter.selectorLabels" . | nindent 6 }}
+      {{- include "github-app-limits-prometheus-exporter.selectorLabels" $. | nindent 6 }}
   template:
     metadata:
-      {{- with .Values.podAnnotations }}
+      {{- with $.Values.podAnnotations }}
       annotations:
         {{- toYaml . | nindent 8 }}
       {{- end }}
       labels:
-        {{- include "github-app-limits-prometheus-exporter.selectorLabels" . | nindent 8 }}
+        {{- include "github-app-limits-prometheus-exporter.selectorLabels" $. | nindent 8 }}
     spec:
-      {{- with .Values.imagePullSecrets }}
+      {{- with $.Values.imagePullSecrets }}
       imagePullSecrets:
         {{- toYaml . | nindent 8 }}
       {{- end }}
-      serviceAccountName: {{ include "github-app-limits-prometheus-exporter.serviceAccountName" . }}
+      serviceAccountName: {{ include "github-app-limits-prometheus-exporter.serviceAccountName" $. }}
       securityContext:
-        {{- toYaml .Values.podSecurityContext | nindent 8 }}
+        {{- toYaml $.Values.podSecurityContext | nindent 8 }}
       containers:
-        - name: {{ .Chart.Name }}
+        - name: {{ $.Chart.Name }}
           securityContext:
-            {{- toYaml .Values.securityContext | nindent 12 }}
-          image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
-          imagePullPolicy: {{ .Values.image.pullPolicy }}
+            {{- toYaml $.Values.securityContext | nindent 12 }}
+          image: "{{ $.Values.image.repository }}:{{ $.Values.image.tag | default $.Chart.AppVersion }}"
+          imagePullPolicy: {{ $.Values.image.pullPolicy }}
           env:
-          {{- if eq .Values.github.authType "app" }}
+          {{- if eq .authType "app" }}
             - name: GITHUB_AUTH_TYPE
-              value: {{ .Values.github.authType | upper | quote }}
+              value: {{ $github.authType | upper | quote }}
             - name: GITHUB_APP_ID
-              value: {{ .Values.github.appID | quote}}
+              value: {{ $github.appID | quote}}
             - name: GITHUB_INSTALLATION_ID
-              value: {{ .Values.github.installationID | quote}}
+              value: {{ $github.installationID | quote}}
             - name: GITHUB_PRIVATE_KEY_PATH
-              value: "{{ .Values.github.privateKeyPath }}key.pem"
+              value: "{{ $github.privateKeyPath }}key.pem"
             - name: GITHUB_ACCOUNT_NAME
-              value: {{ .Release.Name }}
+              value: {{ $.Release.Name }}
           volumeMounts:
           - name: key-volume
             readOnly: true
-            mountPath: {{ .Values.github.privateKeyPath | quote }}
-          {{- else if eq .Values.github.authType "pat" }}
+            mountPath: {{ $github.privateKeyPath | quote }}
+          {{- else if eq .authType "pat" }}
             - name: GITHUB_ACCOUNT_NAME
-              value: {{ .Release.Name }}
+              value: {{ $.Release.Name }}
             - name: GITHUB_AUTH_TYPE
-              value: {{ .Values.github.authType | upper | quote }}
+              value: {{ $github.authType | upper | quote }}
             - name: GITHUB_TOKEN
               valueFrom:
                 secretKeyRef:
-                  name: {{ .Values.github.secretName }}
+                  name: {{ $github.secretName }}
                   key: token
           {{- end }}
           ports:
             - name: http
-              containerPort: {{ .Values.service.port }}
+              containerPort: {{ $.Values.service.port }}
               protocol: TCP
           livenessProbe:
             httpGet:
@@ -73,22 +74,23 @@ spec:
               path: /metrics
               port: http
           resources:
-            {{- toYaml .Values.resources | nindent 12 }}
-      {{- if eq .Values.github.authType "app" }}
+            {{- toYaml $.Values.resources | nindent 12 }}
+      {{- if eq .authType "app" }}
       volumes:
         - name: key-volume
           secret:
-            secretName: {{ .Values.github.secretName }}
+            secretName: {{ $github.secretName }}
       {{- end }}
-      {{- with .Values.nodeSelector }}
+      {{- with $.Values.nodeSelector }}
       nodeSelector:
         {{- toYaml . | nindent 8 }}
       {{- end }}
-      {{- with .Values.affinity }}
+      {{- with $.Values.affinity }}
       affinity:
         {{- toYaml . | nindent 8 }}
       {{- end }}
-      {{- with .Values.tolerations }}
+      {{- with $.Values.tolerations }}
       tolerations:
         {{- toYaml . | nindent 8 }}
       {{- end }}
+{{- end }}
