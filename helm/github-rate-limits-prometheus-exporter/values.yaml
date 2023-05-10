@@ -8,12 +8,7 @@
 #   authType: pat
 #   secretName: secret
 
-github:
-  authType: app
-  appID: 1
-  installationID: 1
-  privateKeyPath: "/tmp"
-  secretName: secret
+github: []
 
 replicaCount: 1
 
